@@ -27,7 +27,10 @@ You can check your Python version by running :
     python --version
 
 You can use your own virtual environment.
-If you are using Visual Studio Code as an IDE, you can find more info on : https://code.visualstudio.com/docs/python/environments
+If you are using Visual Studio Code as an IDE, you can find more info on both : 
+
+* https://code.visualstudio.com/docs/python/environments
+* https://stackoverflow.com/questions/54106071/how-can-i-set-up-a-virtual-environment-for-python-in-visual-studio-code
 
 Then, make sure to install the necessary Python dependencies in it by running :
     
