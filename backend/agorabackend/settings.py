@@ -73,6 +73,8 @@ TEMPLATES = [
     },
 ]
 
+AUTH_USER_MODEL = 'account.Account' # Tells Django where is our custom User model
+
 WSGI_APPLICATION = 'agorabackend.wsgi.application'
 
 
