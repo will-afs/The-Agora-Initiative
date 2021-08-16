@@ -42,8 +42,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework', 
+    'rest_framework',
+    'rest_framework.authtoken',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        #'rest_framework.authentication.SessionAuthentication',
+    ]
+}
+
+AUTH_USER_MODEL = 'account.Account' # Tells Django where is our custom User model
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -72,8 +82,6 @@ TEMPLATES = [
         },
     },
 ]
-
-AUTH_USER_MODEL = 'account.Account' # Tells Django where is our custom User model
 
 WSGI_APPLICATION = 'agorabackend.wsgi.application'
 
