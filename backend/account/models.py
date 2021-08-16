@@ -1,11 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
-# Create your models here.
+
 class MyAccountManager(BaseUserManager):
 
     def create_user(self, email, username, password=None):
-        # This method must be overridden to use MyAccountManager class
         if not email:
             raise ValueError('Users must have an email address')
         if not username:
@@ -54,9 +53,11 @@ class Account(AbstractBaseUser):
     def __str__(self):
         return self.email
 
+    # For checking permissions. to keep it simple all admin have ALL permissons
     def has_perm(self, perm, obj=None):
         return self.is_admin
 
+    # Does this user have permission to view this app? (ALWAYS YES FOR SIMPLICITY)
     def has_module_perms(self, app_label):
         return True
 
