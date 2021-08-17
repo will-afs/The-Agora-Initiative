@@ -1,7 +1,8 @@
 # import sys
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 
 from account.models import Account
@@ -10,6 +11,7 @@ from community.api.serializers import CommunityCreationSerializer
 
 
 @api_view(['POST'])
+@permission_classes((IsAuthenticated, ))
 def community_creation_view(request):
     if request.method == 'POST':
         # Create a new Community
@@ -20,11 +22,10 @@ def community_creation_view(request):
 
             data['response'] = 'Successfully created a new community. '
             data['community name'] = community.name
-            # data['admin'] = account.username
 
             try:
-                # Create user profile
-                author = Account.objects.get(username='will') # UserProfile(account)
+                # Grant author as an admin CommunityMember
+                author = request.user
                 admin = CommunityMember(community=community, user=author, is_admin=True)
                 admin.save()
                 data['response'] += 'Successfully granted author as admin. '
