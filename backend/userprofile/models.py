@@ -11,7 +11,7 @@ class UserProfile(models.Model):
             # null=False,
             primary_key=True,
         )
-    bio = models.CharField(max_length=150)
+    bio = models.CharField(max_length=150, blank=True)
 
     # Future fields
     # -------------
