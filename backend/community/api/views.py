@@ -20,19 +20,21 @@ def community_creation_view(request):
 
             data['response'] = 'Successfully created a new community. '
             data['community name'] = community.name
-            #data['admin'] = account.username
+            # data['admin'] = account.username
 
-            # try:
-            #     # Create user profile
-            #     user = UserProfile(account)
-            #     user.save()
-            #     data['response'] += 'Successfully created user profile. '
-            # except:
-            #     data['response'] += 'But then, an internal error occured '\
-            #                         'at user profile creation. ' # + sys.exc_info()[0] + ' '
-            #     account.delete()
-            #     data['response'] += 'Operation cancelled : deleted the previously created account.'
-            #     return Response(data)
+            try:
+                # Create user profile
+                author = Account.objects.get(username='will') # UserProfile(account)
+                admin = CommunityMember(community=community, user=author, is_admin=True)
+                admin.save()
+                data['response'] += 'Successfully granted author as admin. '
+                data['admin username'] = author.username
+            except:
+                data['response'] += 'But then, an internal error occured '\
+                                    'when trying to grant author as community admin. ' # + sys.exc_info()[0] + ' '
+                community.delete()
+                data['response'] += 'Operation cancelled : deleted the previously created community.'
+                return Response(data)
         else:
             data = community_creation_serializer.errors
         return Response(data)
