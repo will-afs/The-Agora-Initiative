@@ -8,104 +8,89 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
-from account.api.views import registration_view
-
 
 username = 'testcase'
 password = 'somestrongPassword'
+email = 'testcase@gmail.com'
+
+registration_data = {
+            'username': username,
+            'password': password,
+            'email': email
+        }
+
+login_data = {
+    'username': username,
+    'password': password
+    }
+
+registration_url = reverse('account_api:register')
+login_url = reverse('account_api:login')
+
+
+def register():
+    account = Account(
+        username = username,
+        email = email,
+    )
+    account.set_password(password)
+    account.save()        
+
 
 class RegistrationTestCase(APITestCase):
 
-    def test_registration(self):
-        data = {
-            'username': username,
-            'password': password,
-            'email': 'testcase@gmail.com'
-        }
-        url = reverse('account_api:register')
-        response = self.client.post(url, data)
+    def test_registration_success(self):
+        response = self.client.post(registration_url, registration_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         # Checking the account has truly been created into the database
         self.assertEqual(Account.objects.count(), 1)
         self.assertEqual(Account.objects.get().username, username)
 
 
-    def test_registration_account_already_exists(self):
-        data = {
-            'username': username,
-            'password': password,
-            'email': 'testcase@gmail.com'
-        }
-        url = reverse('account_api:register')
-
-        response = self.client.post(url, data)
-        # Checking the account has truly been created into the database
-        self.assertEqual(Account.objects.count(), 1)
-        self.assertEqual(Account.objects.get().username, username)
-
-        # Trying to register again, with the same credentials
-        response = self.client.post(url, data)
+    def test_registration_account_already_exists_fails(self):
+        register()
+        # Trying to register with already used credentials
+        response = self.client.post(registration_url, registration_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         # Checking no account has been created in addition to the previously existing one
         self.assertEqual(Account.objects.count(), 1)
         self.assertEqual(Account.objects.get().username, username)
         
 
-    def test_registration_missing_field(self):
-        data = {
+    def test_registration_missing_field_fails(self):
+        missing_field_data = {
             'username': username,
             'email': 'testcase@gmail.com'
         }
-        url = reverse('account_api:register')
-        response = self.client.post(url, data)
+        response = self.client.post(registration_url, missing_field_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         # Checking no account has been created
         self.assertEqual(Account.objects.count(), 0)
 
 
 class LoginTestCase(APITestCase):
-    def register(self):
-        # register account
-            data = {
-                'username': username,
-                'password': password,
-                'email': 'testcase@gmail.com'
-            }
-            url = reverse('account_api:register')
-            self.client.post(url, data)
 
     def test_login_success(self):
-               
-        self.register()
-
+        register()
         # login onto registered account
-        data = {
-            'username': username,
-            'password': password
-        }
-        url = reverse('account_api:login')
-        response = self.client.post(url, data)
+        response = self.client.post(login_url, login_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_login_fail_unregistered_user(self):
-
-        # login onto unregistered user attempt
-        data = {
+    def test_login_unregistered_user_fails(self):
+        # login onto unregistered account
+        invalid_username_data = {
             'username': 'unregisteredusername',
             'password': password
         }
-        url = reverse('account_api:login')
-        response = self.client.post(url, data)
+        response = self.client.post(login_url, invalid_username_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_login_fail_wrong_password(self):
-        self.register()
-
-        # login with wrong password attempt
-        data = {
+    def test_login_wrong_password_fails(self):
+        register()
+        # login with invalid password attempt
+        invalid_password_data = {
             'username': username,
             'password': 'wrongpassword'
         }
-        url = reverse('account_api:login')
-        response = self.client.post(url, data)
+        response = self.client.post(login_url, invalid_password_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
