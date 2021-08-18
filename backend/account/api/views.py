@@ -22,7 +22,7 @@ def registration_view(request):
 
             try:
                 # Create user profile
-                user = UserProfile(account)
+                user = UserProfile(account.pk)
                 user.save()
                 data['response'] += 'Successfully created user profile. '
             except:
@@ -30,7 +30,7 @@ def registration_view(request):
                                     'at user profile creation. ' # + sys.exc_info()[0] + ' '
                 account.delete()
                 data['response'] += 'Operation cancelled : deleted the previously created account.'
-                return Response(data)
+                return Response(data, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Generate token for further authentication
             token = Token.objects.get(user=account).key
@@ -38,6 +38,7 @@ def registration_view(request):
 
         else:
             data = registration_serializer.errors
-        return Response(data)
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+        return Response(data, status.HTTP_201_CREATED)
 
 
