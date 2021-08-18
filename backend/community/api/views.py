@@ -35,9 +35,10 @@ def community_creation_view(request):
                                     'when trying to grant author as community admin. ' # + sys.exc_info()[0] + ' '
                 community.delete()
                 data['response'] += 'Operation cancelled : deleted the previously created community.'
-                return Response(data)
+                return Response(data, status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             data = community_creation_serializer.errors
-        return Response(data)
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+        return Response(data, status.HTTP_201_CREATED)
 
 
