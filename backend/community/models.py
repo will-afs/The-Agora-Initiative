@@ -1,12 +1,24 @@
 from django.db import models
 from account.models import Account
 from django.template.defaultfilters import slugify
+from django.core.validators import RegexValidator
+
 # Create your models here.
 
 class Community(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(
+        max_length=30,
+        unique=True,
+        validators = [
+                        RegexValidator(
+                                        regex='^[a-zA-Z0-9]*$',
+                                        message='Community name must be Alphanumeric.',
+                                        code='invalid_username'
+                            )
+                    ]
+    )
     bio = models.CharField(max_length=150, blank=True)
-    slug = models.SlugField(max_length=30, blank=True)
+    slug = models.SlugField(max_length=30) # , blank=True
 
     
     # picture = models.ImageField()

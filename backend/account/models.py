@@ -1,10 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-
+from django.core.validators import RegexValidator
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
+from django.template.defaultfilters import slugify
 
 
 class MyAccountManager(BaseUserManager):
@@ -39,10 +40,21 @@ class MyAccountManager(BaseUserManager):
         return user
 
 
-
 class Account(AbstractBaseUser):
-    email = models.EmailField(verbose_name="email", max_length=60, unique=True)
-    username = models.CharField(max_length=30, unique=True)
+    email = models.EmailField(verbose_name="email", max_length=60, unique=True, blank=False)
+    username = models.CharField(
+                                max_length=30,
+                                unique=True,
+                                blank=False,
+                                validators = [
+                                                RegexValidator(
+                                                                regex='^[a-zA-Z0-9]*$',
+                                                                message='Username must be Alphanumeric.',
+                                                                code='invalid_community_name'
+                                                    )
+                                            ]
+    )
+    slug = models.SlugField(max_length=30, blank=True)
     date_joined = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
     last_login = models.DateTimeField(verbose_name='last login', auto_now_add=True)
     is_admin = models.BooleanField(default=False)
@@ -54,6 +66,10 @@ class Account(AbstractBaseUser):
     REQUIRED_FIELDS = ['email']
 
     objects = MyAccountManager() # What is the point of this line?
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.username)
+        super(Account, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.username

@@ -71,6 +71,17 @@ class RegistrationTestCase(APITestCase):
         # Checking no account has been created
         self.assertEqual(Account.objects.count(), 0)
 
+    def test_registration_wrong_username_pattern_fails(self):
+        missing_field_data = {
+            'username': username+'!',
+            'email': email,
+            'password':password
+        }
+        response = self.client.post(registration_url, missing_field_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Checking no account has been created
+        self.assertEqual(Account.objects.count(), 0)
+
 
 class LoginTestCase(APITestCase):
 
