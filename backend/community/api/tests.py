@@ -89,6 +89,14 @@ class CommunityCreationTestCase(APITestCase):
         self.assertEqual(CommunityMember.objects.get().is_admin, True)
         self.assertEqual(CommunityMember.objects.get().user.username, username)
 
+    def test_community_creation_with_incorrect_name_pattern_fails(self):
+        self.authenticate()
+        invalid_community_data = {
+            'name': community_name+'_',
+        }
+        response = self.client.post(create_community_url, invalid_community_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Community.objects.count(), 0)
 
 class JoinRequestCreationTestCase(APITestCase):
     def authenticate(self):
