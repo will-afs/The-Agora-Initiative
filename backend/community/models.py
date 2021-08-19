@@ -6,7 +6,7 @@ from django.template.defaultfilters import slugify
 class Community(models.Model):
     name = models.CharField(max_length=30, unique=True)
     bio = models.CharField(max_length=150, blank=True)
-    slug = models.SlugField(max_length=30)
+    slug = models.SlugField(max_length=30, blank=True)
 
     
     # picture = models.ImageField()
