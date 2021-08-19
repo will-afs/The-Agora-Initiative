@@ -1,10 +1,13 @@
 from django.db import models
 from account.models import Account
+from django.template.defaultfilters import slugify
 # Create your models here.
 
 class Community(models.Model):
     name = models.CharField(max_length=30, unique=True)
     bio = models.CharField(max_length=150, blank=True)
+    slug = models.SlugField(max_length=30)
+
     
     # picture = models.ImageField()
     # posts = 
@@ -14,7 +17,10 @@ class Community(models.Model):
     
     def __str__(self):
         return self.name
-        
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super(Community, self).save(*args, **kwargs)
 
 class CommunityMember(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=False)

@@ -21,5 +21,5 @@ urlpatterns = [
 
     # REST FRAMEWORK URLS
     path('api/account/', include('account.api.urls', namespace='account_api')),
-    path('api/community/', include('community.api.urls', 'community_api')),
+    path('api/communities/', include('community.api.urls', namespace='community_api')),
 ]   
