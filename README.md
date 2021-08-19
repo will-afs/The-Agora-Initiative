@@ -68,6 +68,12 @@ And apply them to the database by running :
 
     python manage.py migrate
     
- 
+Running unit tests
+------------------
+The tests are defined in tests.py files.
+They can be launched by running the following command :
+
+    python manage.py makemigrations test
+        
     
     
