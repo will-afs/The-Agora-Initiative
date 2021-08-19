@@ -3,16 +3,43 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
 
 from account.models import Account
-from community.models import Community, CommunityMember
+from community.models import Community, CommunityMember, JoinRequest
 from community.api.serializers import CommunityCreationSerializer
+
+
+# Helpers - Put these functions into a utils.py file or something like this
+#------------------------------------------------------------
+
+def community_member_exists(user:Account, community:Community)->bool:
+    try:
+        CommunityMember.objects.get(community=community, user=user)
+        return True
+    except CommunityMember.DoesNotExist:
+        return False
+
+def join_request_exists(user:Account, community:Community)->bool:
+    try:
+        JoinRequest.objects.get(community=community, user=user)
+        return True
+    except JoinRequest.DoesNotExist:
+        return False
+
+def community_exists(community_slug:str)->bool:
+    try :
+            Community.objects.get(slug=community_slug)
+            return True
+    except Community.DoesNotExist:
+        return False
+
+
+#------------------------------------------------------------
 
 
 @api_view(['POST'])
 @permission_classes((IsAuthenticated, ))
-def community_creation_view(request):
+def create_community_view(request):
     if request.method == 'POST':
         # Create a new Community
         community_creation_serializer = CommunityCreationSerializer(data=request.data)
@@ -42,3 +69,40 @@ def community_creation_view(request):
         return Response(data, status.HTTP_201_CREATED)
 
 
+@api_view(['POST'])
+@permission_classes((IsAuthenticated, ))
+def create_join_request_view(request, community_slug):
+    if request.method == 'POST':
+        # community_name = request.data['community name']
+        community = community_slug
+        author = request.user
+        data = {} 
+        
+        if not community_exists(community_slug):
+            data['response'] = 'This community does not exist.'
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(data, status_code)
+        else:
+            community = Community.objects.get(slug=community_slug)
+
+        data['user name'] = author.username
+        data['community name'] = community.name
+
+        if community_member_exists(user=author, community=community):
+            data['response'] = 'This user is already a member of the Community.'
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(data, status_code)
+
+        if join_request_exists(user=author, community=community):
+            data['response'] = 'A join request already exists for this user over the community.'
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(data, status_code)
+
+        join_request = JoinRequest(
+            community=community,
+            user=author
+        )
+        join_request.save()
+        data['response'] = 'Successfully created a join request.'
+        status_code = status.HTTP_201_CREATED
+        return Response(data, status_code)
