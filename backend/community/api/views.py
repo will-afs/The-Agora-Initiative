@@ -1,4 +1,7 @@
 # import sys
+from django.http.response import Http404
+from django.shortcuts import get_object_or_404
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -28,7 +31,7 @@ def join_request_exists(user:Account, community:Community)->bool:
 
 def community_exists(community_slug:str)->bool:
     try :
-            Community.objects.get(slug=community_slug)
+            Community.objects.get_object_or_404(slug=community_slug)
             return True
     except Community.DoesNotExist:
         return False
@@ -78,24 +81,24 @@ def create_join_request_view(request, community_slug):
         author = request.user
         data = {} 
         
-        if not community_exists(community_slug):
+        try: 
+            community = get_object_or_404(Community, slug=community_slug)
+        except Http404:
             data['response'] = 'This community does not exist.'
-            status_code = status.HTTP_400_BAD_REQUEST
+            status_code = status.HTTP_404_NOT_FOUND
             return Response(data, status_code)
-        else:
-            community = Community.objects.get(slug=community_slug)
 
         data['user name'] = author.username
         data['community name'] = community.name
 
         if community_member_exists(user=author, community=community):
             data['response'] = 'This user is already a member of the Community.'
-            status_code = status.HTTP_400_BAD_REQUEST
+            status_code = status.HTTP_400_BAD_REQUEST # TODO : HTTP_403_FORBIDDEN?
             return Response(data, status_code)
 
         if join_request_exists(user=author, community=community):
             data['response'] = 'A join request already exists for this user over the community.'
-            status_code = status.HTTP_400_BAD_REQUEST
+            status_code = status.HTTP_400_BAD_REQUEST # TODO : HTTP_403_FORBIDDEN?
             return Response(data, status_code)
 
         join_request = JoinRequest(

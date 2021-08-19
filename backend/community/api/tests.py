@@ -144,7 +144,7 @@ class JoinRequestCreationTestCase(APITestCase):
         self.authenticate() 
         # Ask to join the community
         response = self.client.post(create_join_request_url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)    
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)    
         self.assertEqual(JoinRequest.objects.count(), 0)
 
     def test_create_join_request_already_exists_fails(self):
