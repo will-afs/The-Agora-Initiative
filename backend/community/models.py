@@ -17,13 +17,9 @@ class Community(models.Model):
                             )
                     ]
     )
-    bio = models.CharField(max_length=150, blank=True)
-    slug = models.SlugField(max_length=30) # , blank=True
+    bio = models.CharField(max_length=150, blank=True, default='')
+    slug = models.SlugField(max_length=30, blank=True)
 
-    
-    # picture = models.ImageField()
-    # posts = 
-    # admins = models.ManyToManyField(Account, on_delete=models.DO_NOTHING, blank=False)
     class Meta(object):
         verbose_name_plural = 'Communities'
     
@@ -35,13 +31,13 @@ class Community(models.Model):
         super(Community, self).save(*args, **kwargs)
 
 class CommunityMember(models.Model):
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=False)
-    user = models.ForeignKey(Account, on_delete=models.CASCADE, blank=False)
-    is_admin = models.BooleanField(default=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE)
+    user = models.ForeignKey(Account, on_delete=models.CASCADE)
+    is_admin = models.BooleanField(blank=True, default=False)
 
 
 class JoinRequest(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=False)
     user = models.ForeignKey(Account, on_delete=models.CASCADE, blank=False)
-    creation_date = models.DateTimeField(auto_now_add=True, blank=False)
+    creation_date = models.DateTimeField(auto_now_add=True)
 

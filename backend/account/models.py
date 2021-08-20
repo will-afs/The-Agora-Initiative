@@ -41,11 +41,10 @@ class MyAccountManager(BaseUserManager):
 
 
 class Account(AbstractBaseUser):
-    email = models.EmailField(verbose_name="email", max_length=60, unique=True, blank=False)
+    email = models.EmailField(verbose_name="email", max_length=60, unique=True)
     username = models.CharField(
                                 max_length=30,
                                 unique=True,
-                                blank=False,
                                 validators = [
                                                 RegexValidator(
                                                                 regex='^[a-zA-Z0-9]*$',
@@ -54,7 +53,7 @@ class Account(AbstractBaseUser):
                                                     )
                                             ]
     )
-    slug = models.SlugField(max_length=30, blank=True)
+    slug = models.SlugField(max_length=30, unique=True, blank=True)
     date_joined = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
     last_login = models.DateTimeField(verbose_name='last login', auto_now_add=True)
     is_admin = models.BooleanField(default=False)
