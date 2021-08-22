@@ -1,15 +1,6 @@
 from django.db import models
 
-from account.models import Account
-
-# Create your models here.
-
 class UserProfile(models.Model):
-    user_account = models.OneToOneField(
-            Account,
-            on_delete=models.CASCADE,
-            primary_key=True,
-        )
     bio = models.CharField(max_length=150, blank=True, default='')
 
     # Future fields

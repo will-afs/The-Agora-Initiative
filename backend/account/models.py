@@ -1,3 +1,4 @@
+from userprofile.models import UserProfile
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.core.validators import RegexValidator
@@ -20,10 +21,11 @@ class MyAccountManager(BaseUserManager):
             email=self.normalize_email(email),
             username=username,
         )
-
         user.set_password(password)
+        profile = UserProfile()
+        profile.save()
+        user.profile = profile
         user.save(using=self._db)
-
         return user
 
     def create_superuser(self, email, username, password):
@@ -53,6 +55,12 @@ class Account(AbstractBaseUser):
                                                     )
                                             ]
     )
+    profile = models.OneToOneField(
+            UserProfile,
+            on_delete=models.RESTRICT,
+            blank=True,
+            null=True,
+        )
     slug = models.SlugField(max_length=30, unique=True, blank=True)
     date_joined = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
     last_login = models.DateTimeField(verbose_name='last login', auto_now_add=True)
@@ -69,6 +77,14 @@ class Account(AbstractBaseUser):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.username)
         super(Account, self).save(*args, **kwargs)
+
+    def create(self, email, username, password, **kwargs):
+        account = Account.objects.create_user(
+                                                username = username,
+                                                email = email,
+                                                password = password
+                                            )
+        return account
 
     def __str__(self):
         return self.username
