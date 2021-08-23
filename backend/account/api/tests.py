@@ -1,5 +1,4 @@
 from account.models import Account
-from userprofile.models import UserProfile
 
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -51,11 +50,6 @@ class RegistrationTestCase(APITestCase):
         # Checking the account has truly been created into the database
         self.assertEqual(Account.objects.count(), 1)
         self.assertEqual(Account.objects.get().username, username)
-        # Checking an UserProfile has truly been created into the database for the occasion
-        self.assertEqual(UserProfile.objects.count(), 1)        
-        # Checking this UserProfile has truly been associated to  into the database for the occasion
-        account = Account.objects.get(username=username)
-        self.assertEqual(UserProfile.objects.filter(account=account).count(), 1)
 
 
     def test_registration_account_already_exists_fails(self):
