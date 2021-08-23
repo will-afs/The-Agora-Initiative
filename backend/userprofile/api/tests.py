@@ -3,64 +3,53 @@ from account.models import Account
 from userprofile.models import UserProfile
 from rest_framework.authtoken.models import Token
 from rest_framework import status
-from django.urls import reverse
-from django.template.defaultfilters import slugify
 
-username = 'testcase'
-password = 'somestrongPassword'
-email = 'testcase@gmail.com'
-bio = 'Dummy bio 990097'
-user_profile_slug = slugify(username)
+from userprofile.api.serializers import UserProfileSerializer
+from agorabackend.test_utils import APITestCaseWithAuth
+from agorabackend import test_settings as conf
+from agorabackend.test_utils import register
 
-user_profile_detail_url = reverse(
-                                'userprofile_api:userprofile-detail',
-                                kwargs={'slug':user_profile_slug},
-                                # kwargs={'userprofile_slug':user_profile_slug},
-                                )
-user_profiles_url = reverse(
-                                'userprofile_api:userprofile-list',
-                                )
 
-def register()->Account:
-    account = Account.objects.create_user(
-            email = email,
-            username = username,
-            password = password
-        )
-    return account
+class UserProfileTestCase(APITestCaseWithAuth):
 
-def get_auth_token(account:Account)->Token: # Helper method
-    token = Token.objects.get_or_create(user=account)
-    return token
+    def test_edit_user_profile_success(self):
+        account=register()
+        data = {'bio': 'New bio'}
+        response = self.client.put(conf.USER_PROFILE_DETAIL_URL, data=data)
+        userprofile = UserProfile.objects.get(account=account)
+        self.assertEqual(userprofile.bio, 'New bio')
 
-class UserProfileTestCase(APITestCase):
-#     def authenticate(self): 
-#             account = register()
-#             token_key = get_auth_token(account)[0].key
-#             self.client.credentials(HTTP_AUTHORIZATION='Token ' + token_key)
-
-    def test_userprofile_created_at_registration_success(self):
+    def test_get_user_profile_success(self):
+        account = self.authenticate()[0]
+        userprofile = UserProfile.objects.get(account = account)
+        userprofile_serializer = UserProfileSerializer(userprofile)
+        response = self.client.get(conf.USER_PROFILE_DETAIL_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, userprofile_serializer.data)
+    
+    def test_get_profiles_list_success(self):
+        # Create two user profiles
         register()
-        # Checking an UserProfile has truly been created into the database for the occasion
-        self.assertEqual(UserProfile.objects.count(), 1)        
-        # Checking this UserProfile has truly been associated to the registered account
-        account = Account.objects.get(username=username)
-        self.assertEqual(UserProfile.objects.filter(account=account).count(), 1)
+        register(
+                    username='otheruser',
+                    password='testpassword',
+                    email='otheruser@gmail.com'
+                )
+        user_profiles_queryset = UserProfile.objects.all()
+        user_profiles_serializer = UserProfileSerializer(user_profiles_queryset, many=True)
 
+        response = self.client.get(conf.USER_PROFILES_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, user_profiles_serializer.data)
 
-#     def test_create_get_profile_success(self):
-#         self.authenticate()
-#         response = self.client.get(user_profile_detail_url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_delete_profile_fails(self):
+        register()
+        response = self.client.delete(conf.USER_PROFILE_DETAIL_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(UserProfile.objects.count(), 1)
 
-#     def test_create_user_profile_success(self):
-#         response = self.client.post(user_profile_detail_url)
-#         self.assertEqual(UserProfile.objects.count(), 1)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_create_profile_fails(self):
+        response = self.client.post(conf.USER_PROFILE_DETAIL_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(UserProfile.objects.count(), 0)
 
-#     def test_edit_bio_success(self):
-#         self.authenticate()
-#         self.assertEqual(UserProfile.objects.count(), 1)
-#         response = self.client.put(user_profiles_url, bio)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         #self.assertEqual(UserProfile.objects.get().bio, bio)

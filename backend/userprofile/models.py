@@ -8,6 +8,7 @@ class UserProfile(models.Model):
             Account,
             on_delete=models.SET_NULL,
             null=True,
+            unique=True
         )
     slug = models.SlugField(max_length=30, blank=True, default = slugify(account), unique=True)
     bio = models.CharField(max_length=150, blank=True, default='')
