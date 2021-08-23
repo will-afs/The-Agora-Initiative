@@ -55,7 +55,7 @@ class RegistrationTestCase(APITestCase):
         self.assertEqual(UserProfile.objects.count(), 1)        
         # Checking this UserProfile has truly been associated to  into the database for the occasion
         account = Account.objects.get(username=username)
-        self.assertEqual(UserProfile.objects.get(account=account), account.profile)
+        self.assertEqual(UserProfile.objects.filter(account=account).count(), 1)
 
 
     def test_registration_account_already_exists_fails(self):
