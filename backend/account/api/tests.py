@@ -1,3 +1,5 @@
+from account.api.serializers import AccountSerializer
+from django.test.testcases import TestCase
 from account.models import Account
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
@@ -76,3 +78,53 @@ class LoginTestCase(APITestCase):
         }
         response = self.client.post(conf.LOGIN_URL, invalid_password_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class AccountSerializerTestCase(TestCase):
+    def test_account_creation_success(self):
+        data = conf.REGISTRATION_DATA
+        account_serializer = AccountSerializer(data=data)
+        self.assertEqual(account_serializer.is_valid(), True)
+        account_serializer.create()
+        self.assertEqual(Account.objects.count(), 1)
+
+    def test_username_partial_edit_success(self):
+        account = register()
+        self.assertEqual(Account.objects.count(), 1)
+        data = {'username':'Newusername'}
+        account_serializer = AccountSerializer(account, data=data, partial=True)
+        self.assertEqual(account_serializer.is_valid(), True)
+        account_serializer.save()
+        self.assertEqual(Account.objects.filter(username='Newusername').count(), 1)
+
+    def test_wrong_username__partial_edit_fails(self):
+        account = register()
+        self.assertEqual(Account.objects.count(), 1)
+        data = {'username':'Newu sername'}
+        account_serializer = AccountSerializer(account, data=data, partial=True)
+        self.assertEqual(account_serializer.is_valid(), False)
+        with self.assertRaises(AssertionError) :
+            account_serializer.save()
+        self.assertEqual(Account.objects.filter(username='Newusername').count(), 0)
+
+    def test_password_edit_success(self):
+        account = register()
+        self.assertEqual(Account.objects.count(), 1)
+        data = {'username':'Newusername'}
+        account_serializer = AccountSerializer(account, data=data, partial=True)
+        account_serializer.is_valid()
+        account_serializer.save()
+        self.assertEqual(Account.objects.filter(username='Newusername').count(), 1)
+
+    def test_get_account_serializer_success(self):
+        account = register()
+        self.assertEqual(Account.objects.count(), 1)
+        account_serializer = AccountSerializer(account)
+        self.assertEqual(account_serializer.data['username'], conf.USERNAME)
+        self.assertEqual(account_serializer.data['email'], conf.EMAIL)
+
+
+
+    
+
+
+

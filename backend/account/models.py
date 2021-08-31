@@ -46,7 +46,7 @@ class Account(AbstractBaseUser):
                                                 RegexValidator(
                                                                 regex='^[a-zA-Z0-9]*$',
                                                                 message='Username must be Alphanumeric.',
-                                                                code='invalid_community_name'
+                                                                code='invalid_username'
                                                     )
                                             ]
     )

@@ -1,19 +1,18 @@
-# import sys
+from account.api.serializers import AccountSerializer
+from django.db import IntegrityError
 from django.http.response import Http404
 from django.shortcuts import get_object_or_404
-
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 
 from account.models import Account
 from community.models import Community, CommunityMember, JoinRequest
-from community.api.serializers import CommunityCreationSerializer
-
-
-# Helpers - Put these functions into a utils.py file or something like this
-#------------------------------------------------------------
+from community.api.serializers import CommunitySerializer
+from community.api.permissions import IsAdmin, IsCommunityMember
+from rest_framework import viewsets
+from rest_framework import permissions
+from rest_framework import mixins
 
 def community_member_exists(user:Account, community:Community)->bool:
     try:
@@ -25,6 +24,7 @@ def community_member_exists(user:Account, community:Community)->bool:
 def join_request_exists(user:Account, community:Community)->bool:
     try:
         JoinRequest.objects.get(community=community, user=user)
+        # JoinRequest.objects.filter(community=community, user=user).count()
         return True
     except JoinRequest.DoesNotExist:
         return False
@@ -37,75 +37,69 @@ def community_exists(community_slug:str)->bool:
         return False
 
 
-#------------------------------------------------------------
+class CommunityViewSet(mixins.CreateModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.UpdateModelMixin,
+                        viewsets.GenericViewSet):
+    """
+    This viewset automatically provides `post`, `list`, `retrieve`, `create` and `update` actions.
+    """
+    queryset = Community.objects.all()
+    serializer_class = CommunitySerializer
+    lookup_field = 'slug'
+    permission_classes = [permissions.IsAuthenticated, IsCommunityMember, IsAdmin]
 
 
-@api_view(['POST'])
-@permission_classes((IsAuthenticated, ))
-def create_community_view(request):
-    if request.method == 'POST':
-        # Create a new Community
-        community_creation_serializer = CommunityCreationSerializer(data=request.data)
+    def perform_create(self, serializer):
+        community = serializer.save()
+        author = self.request.user
+        # Grant author as an admin CommunityMember
+        admin = CommunityMember(community=community, user=author, is_admin=True)
+        admin.save()
+
+
+    @action(detail=True, methods=['post'])
+    def join(self, request, slug):
         data = {}
-        if community_creation_serializer.is_valid():
-            community = community_creation_serializer.save()
 
-            data['response'] = 'Successfully created a new community. '
-            data['community name'] = community.name
-
-            try:
-                # Grant author as an admin CommunityMember
-                author = request.user
-                admin = CommunityMember(community=community, user=author, is_admin=True)
-                admin.save()
-                data['response'] += 'Successfully granted author as admin. '
-                data['admin username'] = author.username
-            except:
-                data['response'] += 'But then, an internal error occured '\
-                                    'when trying to grant author as community admin. ' # + sys.exc_info()[0] + ' '
-                community.delete()
-                data['response'] += 'Operation cancelled : deleted the previously created community.'
-                return Response(data, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            data = community_creation_serializer.errors
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        return Response(data, status.HTTP_201_CREATED)
-
-
-@api_view(['POST'])
-@permission_classes((IsAuthenticated, ))
-def create_join_request_view(request, community_slug):
-    if request.method == 'POST':
-        # community_name = request.data['community name']
-        community = community_slug
-        author = request.user
-        data = {} 
-        
         try: 
-            community = get_object_or_404(Community, slug=community_slug)
+            community = get_object_or_404(Community, slug=slug)
         except Http404:
             data['response'] = 'This community does not exist.'
             status_code = status.HTTP_404_NOT_FOUND
             return Response(data, status_code)
 
-        data['user name'] = author.username
-        data['community name'] = community.name
-
+        author = request.user
         if community_member_exists(user=author, community=community):
             data['response'] = 'This user is already a member of the Community.'
-            status_code = status.HTTP_400_BAD_REQUEST # TODO : HTTP_403_FORBIDDEN?
+            status_code = status.HTTP_400_BAD_REQUEST
             return Response(data, status_code)
 
         if join_request_exists(user=author, community=community):
             data['response'] = 'A join request already exists for this user over the community.'
-            status_code = status.HTTP_400_BAD_REQUEST # TODO : HTTP_403_FORBIDDEN?
+            status_code = status.HTTP_400_BAD_REQUEST
             return Response(data, status_code)
 
-        join_request = JoinRequest(
-            community=community,
-            user=author
-        )
+        join_request = JoinRequest(user=author, community=community)
         join_request.save()
-        data['response'] = 'Successfully created a join request.'
         status_code = status.HTTP_201_CREATED
         return Response(data, status_code)
+
+
+class JoinRequestViewSet(mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.DestroyModelMixin,
+                        viewsets.GenericViewSet):
+    """
+    This viewset automatically provides `list`, `retrieve`, and `destroy` actions.
+    """
+    queryset = JoinRequest.objects.all()
+    #serializer_class = JoinRequestSerializer
+    lookup_field = 'slug'
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    @action(detail=True, methods=['delete'])
+    def accept(self, request, slug):
+        pass
+

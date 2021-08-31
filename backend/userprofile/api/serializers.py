@@ -13,3 +13,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'url':{'lookup_field':'slug'}
         }
 
+    def perform_create(self, serializer):
+        serializer.save(account=self.request.user)

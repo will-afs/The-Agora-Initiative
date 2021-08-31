@@ -1,6 +1,5 @@
-from typing import List
 from account.models import Account
-from agorabackend import test_settings as conf 
+from agorabackend import test_settings as conf
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
@@ -18,8 +17,8 @@ def get_auth_token(account:Account)->Token: # Helper method
     return token
 
 class APITestCaseWithAuth(APITestCase):
-    def authenticate(self): 
-            account = register()
+    def authenticate(self, username=conf.USERNAME, password=conf.PASSWORD, email=conf.EMAIL): 
+            account = register(username=username, password=password, email=email)
             token_key = get_auth_token(account)[0].key
             self.client.credentials(HTTP_AUTHORIZATION='Token ' + token_key)
             return account,token_key

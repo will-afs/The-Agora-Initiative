@@ -18,7 +18,7 @@ class Community(models.Model):
                     ]
     )
     bio = models.CharField(max_length=150, blank=True, default='')
-    slug = models.SlugField(max_length=30, blank=True)
+    slug = models.SlugField(max_length=30, blank=True, default=slugify(name))
 
     class Meta(object):
         verbose_name_plural = 'Communities'
@@ -35,9 +35,19 @@ class CommunityMember(models.Model):
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
     is_admin = models.BooleanField(blank=True, default=False)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['community', 'user'], name='unique_communitymember')
+        ]
+
 
 class JoinRequest(models.Model):
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, blank=False)
-    user = models.ForeignKey(Account, on_delete=models.CASCADE, blank=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, editable=False)
+    user = models.ForeignKey(Account, on_delete=models.CASCADE, editable=False)
     creation_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['community', 'user'], name='unique_joinrequest')
+        ]
 
