@@ -3,6 +3,8 @@ from django.db import IntegrityError
 from agorabackend.test_utils import register 
 from agorabackend import test_settings as conf
 from community.models import Community, CommunityMember, JoinRequest
+from django.core.exceptions import ValidationError
+
 
 # Create your tests here.
 
@@ -23,6 +25,19 @@ class JoinTestCase(TestCase):
             join_request = JoinRequest(community=community, user=account)
             join_request.save()
             self.assertEqual(JoinRequest.objects.filter(user=account, community=community).count(), 1)
+
+    def test_join_request_create_but_community_member_already_exists_fails(self):
+        account = register()
+        community = Community(name=conf.COMMUNITY_NAME)
+        community.save()
+        community_member = CommunityMember(community=community, user=account)
+        community_member.save()
+        # Create a first join request on this community for this user
+        join_request = JoinRequest(community=community, user=account)
+        with self.assertRaises(ValidationError):
+            join_request.save()
+        self.assertEqual(JoinRequest.objects.filter(user=account, community=community).count(), 0)
+
 
 class CommunityMemberCreateTestCase(TestCase):        
 

@@ -1,7 +1,7 @@
 from rest_framework import permissions
 from community.models import CommunityMember
 
-class IsAdmin(permissions.BasePermission):
+class IsCommunityAdmin(permissions.BasePermission):
     """
     Custom permission to only allow admins of a community to edit it.
     """

@@ -2,6 +2,7 @@ from django.db import models
 from account.models import Account
 from django.template.defaultfilters import slugify
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 
@@ -30,6 +31,7 @@ class Community(models.Model):
         self.slug = slugify(self.name)
         super(Community, self).save(*args, **kwargs)
 
+
 class CommunityMember(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
@@ -50,4 +52,13 @@ class JoinRequest(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['community', 'user'], name='unique_joinrequest')
         ]
+
+    def save(self, *args, **kwargs):
+        user = self.user
+        community = self.community
+        try :
+            CommunityMember.objects.get(community=community, user=user)
+            raise ValidationError(message='This user is already a member of that community')            
+        except CommunityMember.DoesNotExist:
+            super(JoinRequest, self).save(*args, **kwargs)
 
