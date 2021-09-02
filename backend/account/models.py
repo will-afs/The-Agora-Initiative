@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
-from django.template.defaultfilters import slugify
+from django.db.models.signals import post_save
 
 
 class MyAccountManager(BaseUserManager):
@@ -15,15 +15,12 @@ class MyAccountManager(BaseUserManager):
             raise ValueError('Users must have an email address')
         if not username:
             raise ValueError('Users must have an username')
-
         user = self.model(
             email=self.normalize_email(email),
             username=username,
         )
-
         user.set_password(password)
         user.save(using=self._db)
-
         return user
 
     def create_superuser(self, email, username, password):
@@ -41,20 +38,18 @@ class MyAccountManager(BaseUserManager):
 
 
 class Account(AbstractBaseUser):
-    email = models.EmailField(verbose_name="email", max_length=60, unique=True, blank=False)
+    email = models.EmailField(verbose_name="email", max_length=60, unique=True)
     username = models.CharField(
                                 max_length=30,
                                 unique=True,
-                                blank=False,
                                 validators = [
                                                 RegexValidator(
                                                                 regex='^[a-zA-Z0-9]*$',
                                                                 message='Username must be Alphanumeric.',
-                                                                code='invalid_community_name'
+                                                                code='invalid_username'
                                                     )
                                             ]
     )
-    slug = models.SlugField(max_length=30, blank=True)
     date_joined = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
     last_login = models.DateTimeField(verbose_name='last login', auto_now_add=True)
     is_admin = models.BooleanField(default=False)
@@ -67,9 +62,15 @@ class Account(AbstractBaseUser):
 
     objects = MyAccountManager() # What is the point of this line?
 
-    def save(self, *args, **kwargs):
-        self.slug = slugify(self.username)
-        super(Account, self).save(*args, **kwargs)
+
+    def create(self, email, username, password, **kwargs):
+        account = Account.objects.create_user(
+                                                username = username,
+                                                email = email,
+                                                password = password
+                                            )
+        post_save(sender=Account, instance=account, created = True, raw=True)
+        return account
 
     def __str__(self):
         return self.username
