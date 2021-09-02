@@ -9,6 +9,7 @@ BIO = 'Dummy bio 990097'
 COMMUNITY_NAME = 'CommunityNameExample'
 USER_PROFILE_SLUG = slugify(USERNAME)
 COMMUNITY_SLUG = slugify(COMMUNITY_NAME)
+JOIN_REQUEST_PK = '1'
 
 # DATA
 REGISTRATION_DATA = {
@@ -47,3 +48,21 @@ JOIN_COMMUNITY_URL = reverse(
                                 'community_api:community-join',
                                 kwargs={'slug':COMMUNITY_SLUG},
                                 )
+JOIN_REQUESTS_URL = reverse(
+                                'community_api:join-request-list',
+                                kwargs={'community_slug':COMMUNITY_SLUG} #'slug':COMMUNITY_SLUG, 
+)
+JOIN_REQUEST_ACCEPT_URL = reverse(
+                                'community_api:join-request-accept',
+                                kwargs={
+                                            'community_slug':COMMUNITY_SLUG,
+                                            'join_request_pk':JOIN_REQUEST_PK
+                                        }
+)
+JOIN_REQUEST_DECLINE_URL = reverse(
+                                'community_api:join-request-decline',
+                                kwargs={
+                                            'community_slug':COMMUNITY_SLUG,
+                                            'join_request_pk':JOIN_REQUEST_PK
+                                        }
+)

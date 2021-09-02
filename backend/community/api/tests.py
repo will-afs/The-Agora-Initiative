@@ -279,7 +279,7 @@ class CommunityGetListTestCase(APITestCaseWithAuth):
 class JoinTestCase(APITestCaseWithAuth):
     
     def test_create_join_request_success(self):
-        # Create an account and Log on
+        # Create an account and Log in
         account = self.authenticate()[0]
         # Create community
         community = Community(name=conf.COMMUNITY_NAME)
@@ -300,7 +300,7 @@ class JoinTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.count(), 0)
 
     def test_create_join_request_community_does_not_exist_fails(self):
-        # Create an account and Log on
+        # Create an account and Log in
         self.authenticate() 
         # Ask to join the community
         response = self.client.post(conf.JOIN_COMMUNITY_URL)
@@ -308,7 +308,7 @@ class JoinTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.count(), 0)
 
     def test_create_join_request_already_exists_fails(self):
-        # Create an account and Log on
+        # Create an account and Log in
         self.authenticate()
         account = Account.objects.get(username=conf.USERNAME)
         # Create community
@@ -323,7 +323,7 @@ class JoinTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.count(), 1)
 
     def test_create_join_request_but_already_member_fails(self):
-        # Create an account and Log on
+        # Create an account and Log in
         account = self.authenticate()[0]
         # Create community
         community = Community(name=conf.COMMUNITY_NAME)
@@ -335,3 +335,78 @@ class JoinTestCase(APITestCaseWithAuth):
         response = self.client.post(conf.JOIN_COMMUNITY_URL)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)    
         self.assertEqual(JoinRequest.objects.count(), 0)
+
+
+class JoinRequestViewTestCase(APITestCaseWithAuth):
+    def setUp(self):
+        self.community = Community(name=conf.COMMUNITY_NAME)
+        self.community.save()
+        self.community_2 = Community(name='Second Community')
+        self.community_2.save()
+        # self.account = register()
+
+    def test_get_list_join_request_as_admin_success(self):
+        # TODO : use permissions !
+        account = self.authenticate()
+        # Test with an empty JoinRequests table
+        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+        # Populate the JoinRequests table with two instances of different communities
+        join_request_1 = JoinRequest(user=account[0], community=self.community)
+        join_request_2 = JoinRequest(user=account[0], community=self.community_2)
+        join_request_1.save()
+        join_request_2.save()
+
+        # Lookup join requests concerning community (not community_2)
+        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0], JoinRequestSerializer(join_request_1).data)
+
+        # Add a new join request to community (not community_2)
+        account_2 = register(username='anotheruser', password='dummypwd', email='anotheruser@gmail.com')
+        join_request_3 = JoinRequest(user=account_2, community=self.community)
+        join_request_3.save()
+        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0], JoinRequestSerializer(join_request_1).data)
+        self.assertEqual(response.data[1], JoinRequestSerializer(join_request_3).data)
+    
+    def test_join_request_accept_as_admin_success(self):
+        account = self.authenticate()
+        # Create a join request
+        join_request_1 = JoinRequest(user=account[0], community=self.community)
+        join_request_1.save()
+        self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
+        # Ensure the user is not already a member of this community
+        self.assertEqual(CommunityMember.objects.filter(user=account[0], community=self.community).count(), 0)
+        # Send the request
+        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Ensure the user related to the join request has been added as a member of the community
+        self.assertEqual(CommunityMember.objects.filter(user=account[0], community=self.community).count(), 1)
+        # Ensure the join request has been deleted
+        self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 0)
+
+    def test_join_request_decline_as_admin_success(self):
+        account = self.authenticate()
+        # Create a join request
+        join_request_1 = JoinRequest(user=account[0], community=self.community)
+        join_request_1.save()
+        self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
+        # Send the request
+        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Ensure the join request has been deleted
+        self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 0)
+
+    
+    def test_join_request_list_not_admin_fails(self):
+        pass
+    def test_join_request_accept_not_admin_fails(self):
+        pass
+    def test_join_request_decline_not_admin_fails(self):
+        pass
