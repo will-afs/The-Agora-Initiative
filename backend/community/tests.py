@@ -14,7 +14,7 @@ class JoinTestCase(TestCase):
         # Create an account and Log on
         account = register()
         # Create community
-        community = Community(name=conf.COMMUNITY_NAME)
+        community = Community(name=conf.COMMUNITY_NAME_1)
         community.save()
         # Create a first join request on this community for this user
         join_request = JoinRequest(community=community, user=account)
@@ -28,7 +28,7 @@ class JoinTestCase(TestCase):
 
     def test_join_request_create_but_community_member_already_exists_fails(self):
         account = register()
-        community = Community(name=conf.COMMUNITY_NAME)
+        community = Community(name=conf.COMMUNITY_NAME_1)
         community.save()
         community_member = CommunityMember(community=community, user=account)
         community_member.save()
@@ -43,7 +43,7 @@ class CommunityMemberCreateTestCase(TestCase):
 
     def test_join_request_deleted_at_community_member_creation_success(self):
         account = register()
-        community = Community(name=conf.COMMUNITY_NAME)
+        community = Community(name=conf.COMMUNITY_NAME_1)
         community.save()
         # Create a first join request on this community for this user
         join_request = JoinRequest(community=community, user=account)

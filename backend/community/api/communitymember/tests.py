@@ -13,7 +13,7 @@ class CommunityMemberSerializerTestCase(TestCase):
     def setUp(self):
         self.account = register()
         self.assertEqual(Account.objects.count(), 1)
-        self.community = Community(name = conf.COMMUNITY_NAME)
+        self.community = Community(name = conf.COMMUNITY_NAME_1)
         self.community.save()
         self.assertEqual(Community.objects.count(), 1)
 
@@ -40,7 +40,7 @@ class CommunityMemberSerializerTestCase(TestCase):
         community_member.save()
         self.assertEqual(CommunityMember.objects.count(), 1)
         self.assertEqual(community_member.user, self.account)
-        community_2 = Community(name='AnotherCommunity')
+        community_2 = Community(name=conf.COMMUNITY_NAME_2)
         community_2.save()
         data = {'community':community_2.pk}
         community_member_serializer = CommunityMemberSerializer(community_member, data=data, partial=True)
