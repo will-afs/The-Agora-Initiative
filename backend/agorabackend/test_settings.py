@@ -14,8 +14,12 @@ USERNAME_3 = 'uSername3'
 PASSWORD_3 = '!password3'
 EMAIL_3 = 'email3@gmail.com'
 
-COMMUNITY_BIO_1 = 'Dummy bio 1'
-COMMUNITY_BIO_2 = 'Dummy bio 2'
+COMMUNITY_BIO_1 = 'Community bio n°1'
+COMMUNITY_BIO_2 = 'Community bio n°2'
+
+USER_PROFILE_BIO_1 = 'User profile bio n°1'
+USER_PROFILE_BIO_2 = 'User profile bio n°2'
+
 
 COMMUNITY_NAME_1 = 'CommunityNameExample1'
 COMMUNITY_NAME_2 = 'CommunityNameExample2'
