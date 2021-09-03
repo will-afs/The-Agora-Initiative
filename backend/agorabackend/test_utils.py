@@ -4,7 +4,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 
-def register(username=conf.USERNAME, password=conf.PASSWORD, email=conf.EMAIL)->Account:
+def register(username=conf.USERNAME_1, password=conf.PASSWORD_1, email=conf.EMAIL_1)->Account:
     account = Account.objects.create_user(
             username = username,
             email = email,
@@ -17,7 +17,7 @@ def get_auth_token(account:Account)->Token: # Helper method
     return token
 
 class APITestCaseWithAuth(APITestCase):
-    def authenticate(self, username=conf.USERNAME, password=conf.PASSWORD, email=conf.EMAIL): 
+    def authenticate(self, username=conf.USERNAME_1, password=conf.PASSWORD_1, email=conf.EMAIL_1): 
             account = register(username=username, password=password, email=email)
             token_key = get_auth_token(account)[0].key
             self.client.credentials(HTTP_AUTHORIZATION='Token ' + token_key)

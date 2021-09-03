@@ -15,7 +15,7 @@ class JoinRequestSerializerTestCase(TestCase):
     def setUp(self):
         self.account = register()
         self.assertEqual(Account.objects.count(), 1)
-        self.community = Community(name = conf.COMMUNITY_NAME)
+        self.community = Community(name = conf.COMMUNITY_NAME_1)
         self.community.save()
         self.assertEqual(Community.objects.count(), 1)
 
@@ -31,7 +31,7 @@ class JoinRequestSerializerTestCase(TestCase):
         join_request.save()
         self.assertEqual(JoinRequest.objects.count(), 1)
         self.assertEqual(join_request.community, self.community)
-        community_2 = Community(name='AnotherCommunity')
+        community_2 = Community(name=conf.COMMUNITY_NAME_2)
         community_2.save()
         data = {'community':community_2.pk}
         join_request_serializer = JoinRequestSerializer(join_request, data=data, partial=True)
@@ -70,9 +70,9 @@ class JoinRequestSerializerTestCase(TestCase):
 
 class JoinRequestViewTestCase(APITestCaseWithAuth):
     def setUp(self):
-        self.community = Community(name=conf.COMMUNITY_NAME)
+        self.community = Community(name=conf.COMMUNITY_NAME_1)
         self.community.save()
-        self.community_2 = Community(name='Second Community')
+        self.community_2 = Community(name=conf.COMMUNITY_NAME_2)
         self.community_2.save()
         # self.account = register()
 
@@ -83,11 +83,11 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         community_member.save()
 
         # Test with an empty JoinRequests table
-        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        response = self.client.get(conf.JOIN_REQUESTS_URL_1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
 
-        account_2 = register(username='otheraccount', password='pwd', email='account2@yahoo.com')
+        account_2 = register(username=conf.USERNAME_2, password=conf.PASSWORD_2, email=conf.EMAIL_2)
         # Populate the JoinRequests table with two instances of different communities
         join_request_1 = JoinRequest(user=account_2, community=self.community)
         join_request_2 = JoinRequest(user=account, community=self.community_2)
@@ -95,16 +95,16 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         join_request_2.save()
 
         # Lookup join requests concerning community (not community_2)
-        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        response = self.client.get(conf.JOIN_REQUESTS_URL_1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0], JoinRequestSerializer(join_request_1).data)
 
         # Add a new join request to community (not community_2)
-        account_3 = register(username='anotheruser', password='dummypwd', email='anotheruser@gmail.com')
+        account_3 = register(username=conf.USERNAME_3, password=conf.PASSWORD_3, email=conf.EMAIL_3)
         join_request_3 = JoinRequest(user=account_3, community=self.community)
         join_request_3.save()
-        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        response = self.client.get(conf.JOIN_REQUESTS_URL_1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0], JoinRequestSerializer(join_request_1).data)
@@ -114,7 +114,7 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         # Log in with a non admin account
         account = self.authenticate()[0]
         # Test with an empty JoinRequests table
-        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        response = self.client.get(conf.JOIN_REQUESTS_URL_1)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(type(response.data['detail']), ErrorDetail)
 
@@ -127,7 +127,7 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.get(conf.JOIN_REQUESTS_URL)
+        response = self.client.get(conf.JOIN_REQUESTS_URL_1)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(type(response.data['detail']), ErrorDetail)
 
@@ -135,14 +135,14 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         account = self.authenticate()[0]
         community_member = CommunityMember(user = account, community=self.community, is_admin=True)
         community_member.save()
-        account_2 = register(username='otheraccount', password='pwd', email='account2@yahoo.com')
+        account_2 = register(username=conf.USERNAME_2, password=conf.PASSWORD_2, email=conf.EMAIL_2)
         # Create a join request
         join_request_1 = JoinRequest(user=account_2, community=self.community)
         join_request_1.save()
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL)
+        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL_1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Ensure the user related to the join request has been added as a member of the community
         self.assertEqual(CommunityMember.objects.filter(user=account, community=self.community).count(), 1)
@@ -157,7 +157,7 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL)
+        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL_1)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(type(response.data['detail']), ErrorDetail)
 
@@ -173,7 +173,7 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL)
+        response = self.client.delete(conf.JOIN_REQUEST_ACCEPT_URL_1)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(type(response.data['detail']), ErrorDetail)
 
@@ -186,13 +186,13 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         community_member.save()
 
         # Create a join request
-        account_2 = register(username='otheraccount', password='pwd', email='account2@yahoo.com')
+        account_2 = register(username=conf.USERNAME_2, password=conf.PASSWORD_2, email=conf.EMAIL_2)
         join_request_1 = JoinRequest(user=account_2, community=self.community)
         join_request_1.save()
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL)
+        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL_1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Ensure the join request has been deleted
@@ -207,7 +207,7 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL)
+        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL_1)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(type(response.data['detail']), ErrorDetail)
 
@@ -223,7 +223,7 @@ class JoinRequestViewTestCase(APITestCaseWithAuth):
         self.assertEqual(JoinRequest.objects.filter(pk=join_request_1.pk).count(), 1)
 
         # Send the request
-        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL)
+        response = self.client.delete(conf.JOIN_REQUEST_DECLINE_URL_1)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(type(response.data['detail']), ErrorDetail)
 
