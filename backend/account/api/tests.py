@@ -77,6 +77,28 @@ class LoginTestCase(APITestCase):
         response = self.client.post(conf.LOGIN_URL, invalid_password_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
+class LogoutTestCase(APITestCaseWithAuth):
+
+    def test_logout_success(self):
+        # login onto registered account
+        [account, token] = self.authenticate()
+        data={'token':token}
+        response = self.client.post(conf.LOGOUT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_logout_unauthenticated_user_fails(self):
+        data={'token':'gdfgdfgdfbdfgbdfbdbdfb'}
+        response = self.client.post(conf.LOGOUT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+def test_logout_but_token_already_expired_fails(self):
+        [account, token] = self.authenticate()
+        data={'token':token}
+        account.auth_token.delete() # Token expired
+        response = self.client.post(conf.LOGOUT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 class AccountSerializerTestCase(TestCase):
     def test_account_creation_success(self):
         data = conf.REGISTRATION_DATA_1

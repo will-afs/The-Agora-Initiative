@@ -3,8 +3,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
-
+from rest_framework.views import APIView
 from account.api.serializers import AccountSerializer
+from account.models import Account
+from rest_framework import permissions
 
 
 @api_view(['POST'])
@@ -29,6 +31,14 @@ def registration_view(request):
             return Response(data, status.HTTP_400_BAD_REQUEST)
         return Response(data, status.HTTP_201_CREATED)
 
-
+class Logout(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def post(self, request, format=None):
+        try :
+            # simply delete the token to force a login
+            request.user.auth_token.delete()
+            return Response(status=status.HTTP_200_OK)
+        except Account.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 

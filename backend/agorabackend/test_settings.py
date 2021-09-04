@@ -53,6 +53,7 @@ JOIN_REQUEST_DATA_1 = {
 # URLS
 REGISTRATION_URL = reverse('account_api:register')
 LOGIN_URL = reverse('account_api:login')
+LOGOUT_URL = reverse('account_api:logout')
 USER_PROFILE_DETAIL_URL_1 = reverse(
                                         'userprofile_api:userprofile-detail',
                                         kwargs={'slug':USER_PROFILE_SLUG_1},
