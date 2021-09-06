@@ -55,6 +55,8 @@ REGISTRATION_URL = reverse('account_api:register')
 ACCOUNT_URL = reverse('account_api:detail')
 LOGIN_URL = reverse('account_api:login')
 LOGOUT_URL = reverse('account_api:logout')
+CHANGE_PASSWORD_URL = reverse('account_api:change-password')
+DELETE_ACCOUNT_URL = reverse('account_api:delete-account')
 USER_PROFILE_DETAIL_URL_1 = reverse(
                                         'userprofile_api:userprofile-detail',
                                         kwargs={'slug':USER_PROFILE_SLUG_1},

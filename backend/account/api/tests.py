@@ -1,3 +1,4 @@
+from community.models import Community, CommunityMember
 from account.api.serializers import AccountSerializer
 from django.test.testcases import TestCase
 from account.models import Account
@@ -55,7 +56,6 @@ class AccountDetailTestCase(APITestCaseWithAuth):
         account = self.authenticate()[0]
         response = self.client.get(conf.ACCOUNT_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, AccountSerializer(account).data)
 
     def test_account_detail_no_auth_fails(self):
         account = register()
@@ -77,16 +77,6 @@ class AccountDetailTestCase(APITestCaseWithAuth):
     #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     #     self.assertNotEqual(account.username, data['username'])
 
-class SetPasswordTestCase(APITestCase):
-
-    def test_set_password_success(self):
-        pass
-
-    def test_set_password_not_secure_enough_fails(self):
-        pass
-
-    def test_set_password_invalid_old_fails(self):
-        pass
 
 class LoginTestCase(APITestCase):
 
@@ -133,12 +123,68 @@ class LogoutTestCase(APITestCaseWithAuth):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_logout_but_token_already_expired_fails(self):
-            [account, token] = self.authenticate()
-            data={'token':token}
-            account.auth_token.delete() # Token expired
-            response = self.client.post(conf.LOGOUT_URL, data)
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        [account, token] = self.authenticate()
+        data={'token':token}
+        account.auth_token.delete() # Token expired
+        response = self.client.post(conf.LOGOUT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+class DeleteAccountTestCase(APITestCaseWithAuth):
+    def test_delete_account_success(self):
+        [account, token] = self.authenticate()
+        data={'password':conf.PASSWORD_1}
+        response = self.client.post(conf.DELETE_ACCOUNT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        with self.assertRaises(Account.DoesNotExist):
+            Account.objects.get(pk=account.pk)
+
+    def test_delete_account_wrong_password_fails(self):
+        [account, token] = self.authenticate()
+        data={'password':conf.PASSWORD_2}
+        response = self.client.post(conf.DELETE_ACCOUNT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Account.objects.filter(pk=account.pk).count(),1)
+
+    def test_delete_account_no_auth_fails(self):
+        data={'password':conf.PASSWORD_1}
+        response = self.client.post(conf.DELETE_ACCOUNT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_account_last_admin_fails(self):
+        [account, token] = self.authenticate()
+        data={'password':conf.PASSWORD_1}
+        community = Community(name=conf.COMMUNITY_NAME_1)
+        community.save()
+        community_member = CommunityMember(user=account, community=community, is_admin=True)
+        community_member.save()
+        response = self.client.post(conf.DELETE_ACCOUNT_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        error_msg = 'You are the last admin of this community. Please delete it first, or give admin rights to another community member.'
+        self.assertEqual(response.data[community.slug], error_msg)
+
+
+
+class ChangePasswordTestCase(APITestCaseWithAuth):
+    def test_change_password_success(self):
+        [account, token] = self.authenticate()
+        data = {'old_password': conf.PASSWORD_1, 'new_password': conf.PASSWORD_2}
+        response = self.client.patch(conf.CHANGE_PASSWORD_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        account = Account.objects.get(username=account.username)
+        self.assertEqual(account.check_password(conf.PASSWORD_2), True)
+
+    # def test_change_password_not_secure_enough_fails(self):
+    #     [account, token] = self.authenticate()
+    #     data = {'old_password': conf.PASSWORD_1, 'new_password': 'h'}
+    #     response = self.client.patch(conf.CHANGE_PASSWORD_URL, data)
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_set_password_invalid_old_fails(self):
+        [account, token] = self.authenticate()
+        data = {'old_password': conf.PASSWORD_3, 'new_password': conf.PASSWORD_2}
+        response = self.client.patch(conf.CHANGE_PASSWORD_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(account.check_password(conf.PASSWORD_2), False)
 
 class AccountSerializerTestCase(TestCase):
     def test_account_creation_success(self):

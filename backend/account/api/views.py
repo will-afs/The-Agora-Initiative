@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from account.api.serializers import AccountSerializer, LoginSerializer
+from account.api.serializers import AccountSerializer, ChangePasswordSerializer, DeleteAccountSerializer
 from account.models import Account
 from rest_framework import viewsets
 from rest_framework import permissions
@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.http.response import Http404
 from django.db.models import Prefetch
 from rest_framework import generics
-
+from community.models import CommunityMember
 
 # class AccountDetail(APIView):
 #     """
@@ -78,7 +78,83 @@ class AccountView(generics.RetrieveAPIView): #generics.RetrieveUpdateAPIView
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = request.user
+        except Account.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = self.get_serializer(instance)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+class ChangePasswordView(generics.UpdateAPIView):
+        """
+        An endpoint for changing password.
+        """
+        serializer_class = ChangePasswordSerializer
+        model = Account
+        permission_classes = (permissions.IsAuthenticated,)
+
+        def get_object(self, queryset=None):
+            obj = self.request.user
+            return obj
+
+        def update(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            serializer = self.get_serializer(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                # Check old password
+                if not self.object.check_password(serializer.data.get("old_password")):
+                    data["old_password"]="Wrong password."
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+                # set_password also hashes the password that the user will get
+                self.object.set_password(serializer.data.get("new_password"))
+                self.object.save()
+                return Response(data=data, status=status.HTTP_200_OK)
+                
+                
+class DeleteAccountView(generics.UpdateAPIView):
+        """
+        An endpoint for deleting an account.
+        """
+        serializer_class = DeleteAccountSerializer
+        model = Account
+        permission_classes = (permissions.IsAuthenticated,)
+
+        def last_admin_of_communities(self):
+            user = self.request.user
+            community_member_list = CommunityMember.objects.filter(user=user, is_admin=True).all()
+            communities_slugs = []
+            for community_member in community_member_list:
+                communities_slugs.append(community_member.community.slug)
+            return communities_slugs
+
+        def get_object(self, queryset=None):
+            obj = self.request.user
+            return obj
+
+        def post(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            serializer = self.get_serializer(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                # Check password
+                if not self.object.check_password(serializer.data.get("password")):
+                    data["password"]="Wrong password."
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+                communities_list = self.last_admin_of_communities()
+                if len(communities_list) != 0:
+                    message = 'You are the last admin of this community. Please delete it first, or give admin rights to another community member.'
+                    for community_slug in communities_list:
+                        exec('data[\'' + community_slug + '\']=message')
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    self.object.delete()
+                    return Response(data=data, status=status.HTTP_200_OK)
+
+
     # def perform_update(self, serializer):
     #     return super().perform_update(serializer)
 
@@ -99,17 +175,6 @@ class AccountView(generics.RetrieveAPIView): #generics.RetrieveUpdateAPIView
     #             instance._prefetched_objects_cache = {}
 
     #         return Response(serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            instance = request.user
-        except Account.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        else:
-            serializer = self.get_serializer(instance)
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-
-    
 
 # class DeleteAccountView(generics.CreateAPIView):
 #     """
