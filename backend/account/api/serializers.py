@@ -43,6 +43,21 @@ class AccountSerializer(serializers.ModelSerializer):
             password = self.validated_data['password'],
         )
         return account
+
+
+class LoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['email', 'username', 'password']
+        extra_kwargs = {'password':{'write_only':True}}
+
+    def get(self):
+        account = Account.objects.create_user(
+            email = self.validated_data['email'],
+            username = self.validated_data['username'],
+            password = self.validated_data['password'],
+        )
+        return account
         
     # def update(self, request, *args, **kwargs):
     #     account = Account.objects.get(username=self.data['username'])

@@ -4,6 +4,7 @@ from account.models import Account
 from rest_framework.test import APITestCase
 from rest_framework import status
 from agorabackend.test_utils import APITestCaseWithAuth, register
+from rest_framework.authtoken.models import Token
 
 
 from agorabackend import test_settings as conf
@@ -49,6 +50,43 @@ class RegistrationTestCase(APITestCaseWithAuth):
         # Checking no account has been created
         self.assertEqual(Account.objects.count(), 0)
 
+class AccountDetailTestCase(APITestCaseWithAuth):
+    def test_account_detail_success(self):
+        account = self.authenticate()[0]
+        response = self.client.get(conf.ACCOUNT_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, AccountSerializer(account).data)
+
+    def test_account_detail_no_auth_fails(self):
+        account = register()
+        response = self.client.get(conf.ACCOUNT_URL)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # def test_account_partial_edit_username_success(self):
+    #     account = self.authenticate()[0]
+    #     data = {'username': account.username +'bis'}
+    #     response = self.client.patch(conf.ACCOUNT_URL, data=data)
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     self.assertEqual(response.data['username'], data['username'])
+    #     self.assertEqual(account.username, data['username'])
+
+    # def test_account_partial_edit_no_auth_fails(self):
+    #     account = register()
+    #     data = {'username': account.username +'bis'}
+    #     response = self.client.patch(conf.ACCOUNT_URL, data=data)
+    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    #     self.assertNotEqual(account.username, data['username'])
+
+class SetPasswordTestCase(APITestCase):
+
+    def test_set_password_success(self):
+        pass
+
+    def test_set_password_not_secure_enough_fails(self):
+        pass
+
+    def test_set_password_invalid_old_fails(self):
+        pass
 
 class LoginTestCase(APITestCase):
 
@@ -86,18 +124,21 @@ class LogoutTestCase(APITestCaseWithAuth):
         data={'token':token}
         response = self.client.post(conf.LOGOUT_URL, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        with self.assertRaises(Token.DoesNotExist):
+            Token.objects.get(key=token)
 
     def test_logout_unauthenticated_user_fails(self):
         data={'token':'gdfgdfgdfbdfgbdfbdbdfb'}
         response = self.client.post(conf.LOGOUT_URL, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-def test_logout_but_token_already_expired_fails(self):
-        [account, token] = self.authenticate()
-        data={'token':token}
-        account.auth_token.delete() # Token expired
-        response = self.client.post(conf.LOGOUT_URL, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_logout_but_token_already_expired_fails(self):
+            [account, token] = self.authenticate()
+            data={'token':token}
+            account.auth_token.delete() # Token expired
+            response = self.client.post(conf.LOGOUT_URL, data)
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class AccountSerializerTestCase(TestCase):
     def test_account_creation_success(self):

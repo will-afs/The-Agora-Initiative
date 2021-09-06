@@ -20,7 +20,7 @@ class CommunityViewSet(mixins.CreateModelMixin,
                         mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     """
-    This viewset automatically provides `post`, `list`, `retrieve`, `create` and `update` actions.
+    This viewset automatically provides `create`, `retrieve`, `list` and `update` actions.
     """
     queryset = Community.objects.all()
     serializer_class = CommunitySerializer
