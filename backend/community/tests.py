@@ -53,3 +53,4 @@ class CommunityMemberCreateTestCase(TestCase):
         community_member.save()
         self.assertEqual(CommunityMember.objects.count(), 1)
         self.assertEqual(JoinRequest.objects.count(), 0)
+

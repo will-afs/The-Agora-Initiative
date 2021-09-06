@@ -3,32 +3,24 @@ from rest_framework import serializers
 from account.models import Account
 
 
-class RegistrationSerializer(serializers.ModelSerializer):
+class ChangePasswordSerializer(serializers.Serializer):
+    model = Account
 
-    class Meta:
-        model = Account
-        fields = ['email', 'username', 'password']
-        extra_kwargs = {'password':{'write_only':True}}
+    """
+    Serializer for password change endpoint.
+    """
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
 
-    def create(self):
-        account = Account.objects.create_user(
-            email = self.validated_data['email'],
-            username = self.validated_data['username'],
-            password = self.validated_data['password']
-        )
-        return account
 
-# class SetPasswordSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Account
-#         fields = ['username', 'password']
-#         extra_kwargs = {'password':{'write_only':True}}
+class DeleteAccountSerializer(serializers.Serializer):
+    model = Account
 
-#     def update(self, request, *args, **kwargs):
-#         account = self.get_object()
-#         password = self.validated_data['password']
-#         account.set_password()
-        
+    """
+    Serializer for delete account endpoint.
+    """
+    password = serializers.CharField(required=True)
+
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,6 +35,20 @@ class AccountSerializer(serializers.ModelSerializer):
             password = self.validated_data['password'],
         )
         return account
+
+
+# class LoginSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Account
+#         fields = ['username', 'password']
+
+#     def create(self):
+#         account = Account.objects.create_user(
+#             email = self.validated_data['email'],
+#             username = self.validated_data['username'],
+#             password = self.validated_data['password'],
+#         )
+#         return account
         
     # def update(self, request, *args, **kwargs):
     #     account = Account.objects.get(username=self.data['username'])

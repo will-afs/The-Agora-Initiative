@@ -1,37 +1,66 @@
-# import sys
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from account.api.serializers import AccountSerializer
+from account.api.serializers import AccountSerializer, ChangePasswordSerializer, DeleteAccountSerializer
 from account.models import Account
+from rest_framework import viewsets
 from rest_framework import permissions
+from rest_framework import mixins
+from rest_framework.decorators import action
+from account.api.permissions import AsksToRegister, AsksToLogin
+from django.shortcuts import get_object_or_404
+from django.http.response import Http404
+from django.db.models import Prefetch
+from rest_framework import generics
+from community.models import CommunityMember
+
+# class AccountDetail(APIView):
+#     """
+#     Retrieve, update or delete the user account instance.
+#     """
+#     def get(self, request, format=None):
+#         data={}
+#         user=request.user
+#         try:
+#             account = get_object_or_404(Account, user.pk)
+#         except Http404:
+#             data['response'] = 'This account does not exist.'
+#             status_code = status.HTTP_404_NOT_FOUND
+#             return Response(data, status_code)
+#         else:
+#             account_serializer = AccountSerializer(account)
+#             status_code = status.HTTP_200_OK
+#             return Response(data=account_serializer.data)
 
 
-@api_view(['POST'])
-def registration_view(request):
-    if request.method == 'POST':
-        # Register new account
-        account_serializer = AccountSerializer(data=request.data)
+class RegistrationView(generics.CreateAPIView):
+    """
+    This view automatically provides `create` action in order to register.
+    """
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+    permission_classes = [~permissions.IsAuthenticated&AsksToRegister]
+
+    def perform_create(self, serializer):
+        account_serializer = serializer
+        account = account_serializer.create()
         data = {}
-        if account_serializer.is_valid():
-            account = account_serializer.create()
+        data['response'] = 'Successfully registered a new user.'   
+        data['email'] = account.email
+        data['username'] = account.username
 
-            data['response'] = 'Successfully registered a new user. '
-            data['email'] = account.email
-            data['username'] = account.username
-
-            # Generate token for further authentication
-            token = Token.objects.get(user=account).key
-            data['token'] = token
-
-        else:
-            data = account_serializer.errors
-            return Response(data, status.HTTP_400_BAD_REQUEST)
+        # Generate token for further authentication
+        token = Token.objects.get(user=account).key
+        data['token'] = token
         return Response(data, status.HTTP_201_CREATED)
 
+
 class Logout(APIView):
+    """
+    This view automatically provides `post` action in order to log out.
+    """
     permission_classes = [permissions.IsAuthenticated]
     def post(self, request, format=None):
         try :
@@ -40,5 +69,161 @@ class Logout(APIView):
             return Response(status=status.HTTP_200_OK)
         except Account.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class AccountView(generics.RetrieveAPIView): #generics.RetrieveUpdateAPIView
+    """
+    This view automatically provides `get` action in order to manage an account.
+    """
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = request.user
+        except Account.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = self.get_serializer(instance)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+class ChangePasswordView(generics.UpdateAPIView):
+        """
+        An endpoint for changing password.
+        """
+        serializer_class = ChangePasswordSerializer
+        model = Account
+        permission_classes = (permissions.IsAuthenticated,)
+
+        def get_object(self, queryset=None):
+            obj = self.request.user
+            return obj
+
+        def update(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            serializer = self.get_serializer(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                # Check old password
+                if not self.object.check_password(serializer.data.get("old_password")):
+                    data["old_password"]="Wrong password."
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+                # set_password also hashes the password that the user will get
+                self.object.set_password(serializer.data.get("new_password"))
+                self.object.save()
+                return Response(data=data, status=status.HTTP_200_OK)
+                
+                
+class DeleteAccountView(generics.UpdateAPIView):
+        """
+        An endpoint for deleting an account.
+        """
+        serializer_class = DeleteAccountSerializer
+        model = Account
+        permission_classes = (permissions.IsAuthenticated,)
+
+        def last_admin_of_communities(self):
+            user = self.request.user
+            community_member_list = CommunityMember.objects.filter(user=user, is_admin=True).all()
+            communities_slugs = []
+            for community_member in community_member_list:
+                communities_slugs.append(community_member.community.slug)
+            return communities_slugs
+
+        def get_object(self, queryset=None):
+            obj = self.request.user
+            return obj
+
+        def post(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            serializer = self.get_serializer(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                # Check password
+                if not self.object.check_password(serializer.data.get("password")):
+                    data["password"]="Wrong password."
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+                communities_list = self.last_admin_of_communities()
+                if len(communities_list) != 0:
+                    message = 'You are the last admin of this community. Please delete it first, or give admin rights to another community member.'
+                    for community_slug in communities_list:
+                        exec('data[\'' + community_slug + '\']=message')
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    self.object.delete()
+                    return Response(data=data, status=status.HTTP_200_OK)
+
+
+    # def perform_update(self, serializer):
+    #     return super().perform_update(serializer)
+
+    # def update(self, request, *args, **kwargs):
+    #     partial = kwargs.pop('partial', False)
+    #     try:
+    #         instance = request.user
+    #     except Account.DoesNotExist:
+    #         return Response(status=status.HTTP_400_BAD_REQUEST)
+    #     else:
+    #         serializer = self.get_serializer(instance, data=request.data, partial=partial)
+    #         serializer.is_valid(raise_exception=True)
+    #         self.perform_update(serializer)
+
+    #         if getattr(instance, '_prefetched_objects_cache', None):
+    #             # If 'prefetch_related' has been applied to a queryset, we need to
+    #             # forcibly invalidate the prefetch cache on the instance.
+    #             instance._prefetched_objects_cache = {}
+
+    #         return Response(serializer.data)
+
+# class DeleteAccountView(generics.CreateAPIView):
+#     """
+#     This view automatically provides `destroy` action in order to delete an account.
+#     """
+#     queryset = Account.objects.all()
+#     serializer_class = DeleteAccountSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+#     def perform_create(self, request, format=None):
+#         data={}
+#         try :
+#             request.user.delete()
+#             data['response'] = 'Account successfully deleted.'   
+#             return Response(data, status=status.HTTP_200_OK)
+#         except Account.DoesNotExist:
+#             return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class ChangePasswordView():
+#     """
+#     This view automatically provides `post` action in order to delete an account.
+#     """
+#     queryset = Account.objects.all()
+#     serializer_class = ChangePasswordSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+# @api_view(['POST'])
+# def registration_view(request):
+#     if request.method == 'POST':
+#         # Register new account
+#         account_serializer = AccountSerializer(data=request.data)
+#         data = {}
+#         if account_serializer.is_valid():
+#             account = account_serializer.create()
+
+#             data['response'] = 'Successfully registered a new user. '
+#             data['email'] = account.email
+#             data['username'] = account.username
+
+#             # Generate token for further authentication
+#             token = Token.objects.get(user=account).key
+#             data['token'] = token
+
+#         else:
+#             data = account_serializer.errors
+#             return Response(data, status.HTTP_400_BAD_REQUEST)
+#         return Response(data, status.HTTP_201_CREATED)
+
+
+
 
 

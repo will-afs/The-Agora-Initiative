@@ -16,9 +16,14 @@ def get_auth_token(account:Account)->Token: # Helper method
     token = Token.objects.get_or_create(user=account)
     return token
 
+
+
 class APITestCaseWithAuth(APITestCase):
     def authenticate(self, username=conf.USERNAME_1, password=conf.PASSWORD_1, email=conf.EMAIL_1): 
-            account = register(username=username, password=password, email=email)
-            token_key = get_auth_token(account)[0].key
-            self.client.credentials(HTTP_AUTHORIZATION='Token ' + token_key)
-            return account,token_key
+        account = register(username=username, password=password, email=email)
+        token_key = get_auth_token(account=account)[0].key
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token_key)
+        return account, token_key
+        
+    def logout(self):
+        self.client.credentials(HTTP_AUTHORIZATION='')
