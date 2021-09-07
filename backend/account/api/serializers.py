@@ -35,28 +35,3 @@ class AccountSerializer(serializers.ModelSerializer):
             password = self.validated_data['password'],
         )
         return account
-
-
-# class LoginSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Account
-#         fields = ['username', 'password']
-
-#     def create(self):
-#         account = Account.objects.create_user(
-#             email = self.validated_data['email'],
-#             username = self.validated_data['username'],
-#             password = self.validated_data['password'],
-#         )
-#         return account
-        
-    # def update(self, request, *args, **kwargs):
-    #     account = Account.objects.get(username=self.data['username'])
-    #     account_serializer = AccountSerializer(account)
-
-    #     account_serializer
-    #     account.username = 
-    #     serializer = self.get_serializer(instance, data=request.data, partial=True)
-    #     serializer.is_valid(raise_exception=True)
-    #     self.perform_update(serializer)
-    #     return serializer.data # Response(serializer.data)

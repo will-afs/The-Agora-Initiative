@@ -20,7 +20,7 @@ class CommunityViewSet(mixins.CreateModelMixin,
                         mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     """
-    This viewset automatically provides `create`, `retrieve`, `list` and `update` actions.
+    This viewset automatically provides `create`, `retrieve`, `list`, `update` and `join` actions.
     """
     queryset = Community.objects.all()
     serializer_class = CommunitySerializer
@@ -34,31 +34,3 @@ class CommunityViewSet(mixins.CreateModelMixin,
         # Grant author as an admin CommunityMember
         admin = CommunityMember(community=community, user=author, is_admin=True)
         admin.save()
-
-
-    @action(detail=True, methods=['post'])
-    def join(self, request, slug):
-        data = {}
-
-        try: 
-            community = get_object_or_404(Community, slug=slug)
-        except Http404:
-            data['response'] = 'This community does not exist.'
-            status_code = status.HTTP_404_NOT_FOUND
-            return Response(data, status_code)
-
-        author = request.user
-        if community_member_exists(user=author, community=community):
-            data['response'] = 'This user is already a member of the Community.'
-            status_code = status.HTTP_400_BAD_REQUEST
-            return Response(data, status_code)
-
-        if join_request_exists(user=author, community=community):
-            data['response'] = 'A join request already exists for this user over the community.'
-            status_code = status.HTTP_400_BAD_REQUEST
-            return Response(data, status_code)
-
-        join_request = JoinRequest(user=author, community=community)
-        join_request.save()
-        status_code = status.HTTP_201_CREATED
-        return Response(data, status_code)

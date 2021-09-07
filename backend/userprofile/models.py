@@ -6,7 +6,7 @@ from django.template.defaultfilters import slugify
 class UserProfile(models.Model):
     account = models.OneToOneField(
             Account,
-            on_delete=models.SET_NULL,
+            on_delete=models.CASCADE,
             null=True,
             unique=True
         )

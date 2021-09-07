@@ -79,12 +79,12 @@ COMMUNITY_DETAIL_URL_2 = reverse(
 COMMUNITIES_URL = reverse('community_api:community-list')
 
 JOIN_COMMUNITY_URL_1 = reverse(
-                                    'community_api:community-join',
-                                    kwargs={'slug':COMMUNITY_SLUG_1},
+                                    'community_api:join-community',
+                                    kwargs={'community_slug':COMMUNITY_SLUG_1},
                                 )
 JOIN_COMMUNITY_URL_2 = reverse(
-                                    'community_api:community-join',
-                                    kwargs={'slug':COMMUNITY_SLUG_2},
+                                    'community_api:join-community',
+                                    kwargs={'community_slug':COMMUNITY_SLUG_2},
                                 )
 JOIN_REQUESTS_URL_1 = reverse(
                                 'community_api:join-request-list',
