@@ -68,6 +68,67 @@ class JoinRequestSerializerTestCase(TestCase):
             join_request_serializer.is_valid(raise_exception=True)
 
 
+class JoinTestCase(APITestCaseWithAuth):
+    
+    def test_create_join_request_success(self):
+        # Create an account and Log in
+        account = self.authenticate()[0]
+        # Create community
+        community = Community(name=conf.COMMUNITY_NAME_1)
+        community.save()
+        self.assertEqual(Community.objects.count(), 1)
+        # Ask to join the community
+        response = self.client.post(conf.JOIN_COMMUNITY_URL_1)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(JoinRequest.objects.filter(user=account, community=community).count(), 1)
+
+    def test_create_join_request_no_auth_fails(self):
+        # Create community
+        community = Community(name=conf.COMMUNITY_NAME_1)
+        community.save()
+        # Ask to join the community
+        response = self.client.post(conf.JOIN_COMMUNITY_URL_1)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)    
+        self.assertEqual(JoinRequest.objects.count(), 0)
+
+    def test_create_join_request_community_does_not_exist_fails(self):
+        # Create an account and Log in
+        self.authenticate() 
+        # Ask to join the community
+        response = self.client.post(conf.JOIN_COMMUNITY_URL_1)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)    
+        self.assertEqual(JoinRequest.objects.count(), 0)
+
+    def test_create_join_request_already_exists_fails(self):
+        # Create an account and Log in
+        self.authenticate()
+        account = Account.objects.get(username=conf.USERNAME_1)
+        # Create community
+        community = Community(name=conf.COMMUNITY_NAME_1)
+        community.save()
+        # Create a first join request on this community for this user
+        join_request = JoinRequest(community=community, user=account)
+        join_request.save()
+        # Attempt to create a new one
+        response = self.client.post(conf.JOIN_COMMUNITY_URL_1)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(JoinRequest.objects.count(), 1)
+
+    def test_create_join_request_but_already_member_fails(self):
+        # Create an account and Log in
+        account = self.authenticate()[0]
+        # Create community
+        community = Community(name=conf.COMMUNITY_NAME_1)
+        community.save()
+        # Create a first join request on this community for this user
+        community_member = CommunityMember(community=community, user=account)
+        community_member.save()
+        # Attempt to create a join request but user is already a member of community
+        response = self.client.post(conf.JOIN_COMMUNITY_URL_1)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)    
+        self.assertEqual(JoinRequest.objects.count(), 0)
+
+
 class JoinRequestViewTestCase(APITestCaseWithAuth):
     def setUp(self):
         self.community = Community(name=conf.COMMUNITY_NAME_1)

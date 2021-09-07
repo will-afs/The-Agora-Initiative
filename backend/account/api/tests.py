@@ -112,7 +112,7 @@ class LogoutTestCase(APITestCaseWithAuth):
         # login onto registered account
         [account, token] = self.authenticate()
         data={'token':token}
-        response = self.client.post(conf.LOGOUT_URL, data)
+        response = self.client.delete(conf.LOGOUT_URL, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         with self.assertRaises(Token.DoesNotExist):
             Token.objects.get(key=token)
@@ -168,7 +168,7 @@ class ChangePasswordTestCase(APITestCaseWithAuth):
     def test_change_password_success(self):
         [account, token] = self.authenticate()
         data = {'old_password': conf.PASSWORD_1, 'new_password': conf.PASSWORD_2}
-        response = self.client.patch(conf.CHANGE_PASSWORD_URL, data)
+        response = self.client.put(conf.CHANGE_PASSWORD_URL, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         account = Account.objects.get(username=account.username)
         self.assertEqual(account.check_password(conf.PASSWORD_2), True)
@@ -182,7 +182,7 @@ class ChangePasswordTestCase(APITestCaseWithAuth):
     def test_set_password_invalid_old_fails(self):
         [account, token] = self.authenticate()
         data = {'old_password': conf.PASSWORD_3, 'new_password': conf.PASSWORD_2}
-        response = self.client.patch(conf.CHANGE_PASSWORD_URL, data)
+        response = self.client.put(conf.CHANGE_PASSWORD_URL, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(account.check_password(conf.PASSWORD_2), False)
 

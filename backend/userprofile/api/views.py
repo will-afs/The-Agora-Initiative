@@ -6,7 +6,7 @@ from userprofile.api.permissions import IsOwnerOrReadOnly
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     """
-    This viewset automatically provides `list`, `retrieve` and `update` actions.
+    This viewset automatically provides `list`, `retrieve`, `create`, `update` and `partial update` actions.
     """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
